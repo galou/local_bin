@@ -1,0 +1,7 @@
+#!/bin/sh
+
+DATE=$(date '+%Y-%m-%d')
+
+cd $HOME/.local/share/gtg/
+tar -czf $HOME/06_common/backup/gtg/$DATE-tasks.tar.gz *.xml
+cd - > /dev/null

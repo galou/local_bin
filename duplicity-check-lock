@@ -1,0 +1,8 @@
+#!/bin/sh
+
+LOCKFILE=$(find /home/gael/.cache/duplicity -name lockfile.lock)
+
+if [ -n "$LOCKFILE" ]; then
+    # LOCKFILE is not empty, i.e. a lock file exists
+    zenity --error --text="Error\! duplicity lock file found: $LOCKFILE\!"
+fi

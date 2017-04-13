@@ -1,0 +1,37 @@
+#!/bin/zsh
+
+MOUNT_POINT="/mnt/backup"
+DIR_TO_BACKUP="/home"
+EXCLUDE_DIRS=" \
+	/home/gael/.local/share/Trash \
+	/home/gael/Downloads \
+	/home/gael/02-transfer \
+	/home/gael/03-tmp \
+	/home/gael/04-build \
+	/home/gael/.ccache \
+	/home/gael/.adobe \
+	/home/gael/.cache \
+	/home/gael/.thumbnails \
+	/home/gael/.autojump.vim \
+	/home/lost+found \
+	/home/\$RECYCLE.BIN"
+
+# Add "--exclude" in front of each exclude dir and remove tabs
+EXCLUDE_PARAM="${EXCLUDE_DIRS// / --exclude }"
+EXCLUDE_PARAM="${EXCLUDE_PARAM//	}"
+
+# Mount if not already mounted
+DO_UNMOUNT=false
+mount | grep "$MOUNT_POINT" > /dev/null
+if [ $? = 1 ]; then
+	mount "$MOUNT_POINT"
+	DO_UNMOUNT=true
+fi
+
+if [ -d "$MOUNT_POINT" ]; then
+	eval /usr/bin/duplicity verify --no-encryption $EXCLUDE_PARAM file://$MOUNT_POINT $DIR_TO_BACKUP
+	if [ $DO_UNMOUNT = true ]; then
+		umount "$MOUNT_POINT"
+	fi
+fi
+

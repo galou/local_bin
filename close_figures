@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Method with xdotool (obsolete)
+#ID=$(xdotool search --title "Figure")
+#for WINDOW in $ID; do
+#    xdotool windowactivate $WINDOW && xdotool key 'alt+F4'
+#done
+
+if [ -n "$1" ]; then
+	FIGNAME="$1"
+else
+	FIGNAME="Figure [0-9]\+"
+fi
+
+# Method with wmctrl
+ID=$(wmctrl -l | grep -e "$FIGNAME" | gawk '{print $1}')
+for WINDOW in $ID; do
+    wmctrl -i -c $WINDOW
+done
+

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+WAIT=0
+
+NB_DESKTOPS=$(wmctrl -d | wc -l)
+DEST_DESKTOP=$(($NB_DESKTOPS - 1))
+
+sleep $WAIT
+wmctrl -r 'Thunderbird' -t $DEST_DESKTOP
+wmctrl -r 'Getting Things GNOME' -t $DEST_DESKTOP
+wmctrl -r 'RedNotebook' -t $DEST_DESKTOP
+

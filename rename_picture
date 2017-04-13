@@ -1,0 +1,27 @@
+#!/bin/bash
+
+RENAME_CMD='/usr/bin/jhead -nf%Y-%m-%d--%H-%M-%S'
+
+for arg in "$@"; do
+    NAME_BASE="${arg%.*}"
+    NEF_FILE_LOW="${NAME_BASE}.nef"
+    NEF_FILE_CAP="${NAME_BASE}.NEF"
+    if [ -e "$NEF_FILE_LOW" ]; then
+        NEF_FILE="$NEF_FILE_LOW"
+    fi;
+    if [ -e "$NEF_FILE_CAP" ]; then
+        NEF_FILE="$NEF_FILE_CAP"
+    fi;
+    if [ -e "$NEF_FILE" ]; then
+        CMD_OUTPUT=$($RENAME_CMD "$arg")
+        NEW_JPG_FILE="${CMD_OUTPUT#* --> }"
+        NEW_NEF_FILE="${NEW_JPG_FILE%.jpg}.nef"
+        mv "$NEF_FILE" "$NEW_NEF_FILE"
+        echo "$arg" "-->" "$NEW_JPG_FILE"
+        echo "$NEF_FILE" "-->" "$NEW_NEF_FILE"
+    else
+        if [ -e "$arg" ]; then
+            $RENAME_CMD -q "$arg"
+        fi;
+    fi;
+done

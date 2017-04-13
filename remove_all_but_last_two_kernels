@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Source: http://chr4.org/blog/2013/08/04/apt-get-cleanup-commands/
+sudo apt-get purge $(dpkg --list | egrep 'linux-image-[0-9]' | awk '{print $3,$2}' | sort -nr | tail -n +3 | grep -v $(uname -r) | awk '{ print $2}')
+
+# A short explanation:
+# apt-get purge             # remove packages (and purge configuration) selected by the following lines
+# dpkg --list               # list installed packages
+# egrep 'linux-image-[0-9]' # grep installed kernels
+# awk '{print $3,$2}'       # we need the version, as well as the package name
+# sort -nr                  # sort by version
+# tail -n +2                # filter out latest kernel
+# grep -v $(uname -r)       # filter out currently running kernel (failsafe)
+# awk '{print $2}'          # cut everything but the package name
+

@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+MOUNT_POINT="/mnt/backup"
+# Mount if not already mounted
+DO_UNMOUNT=false
+mount | grep "$MOUNT_POINT" > /dev/null
+if [ $? = 1 ]; then
+	mount "$MOUNT_POINT"
+	DO_UNMOUNT=true
+fi
+
+if [ -d "$MOUNT_POINT" ]; then
+	eval /usr/bin/duplicity collection-status file://$MOUNT_POINT
+	if [ $DO_UNMOUNT = true ]; then
+		umount "$MOUNT_POINT"
+	fi
+fi
+

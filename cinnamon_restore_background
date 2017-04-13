@@ -1,0 +1,7 @@
+#!/bin/sh
+
+gsettings set org.cinnamon.desktop.background picture-options 'none'
+gsettings set org.cinnamon.desktop.background color-shading-type horizontal
+gsettings set org.cinnamon.desktop.background primary-color '#2e2e34343636'
+gsettings set org.cinnamon.desktop.background secondary-color '#88888a8a8585'
+

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+NB_PICS=3000
+
+if [ "$2" = "" ]; then
+	echo "usage image_dir output_dir"
+	exit
+fi
+
+PLS=`mktemp -p /tmp fullfil_sd_images.XXX`
+
+find $1/ -iname '*.jpg' | sort -R | head -n $NB_PICS > $PLS
+
+while read line; do
+	# check if landscape mode
+	if [ $(identify -format '%w' "$line") -gt $(identify -format '%h' "$line") ]; then
+		convert "$line" -resize 800 "$2"/"$(basename "$line")"
+#                convert "$line[800x]" "$2"/"$(basename "$line")"
+ 	fi
+done < $PLS
+
+rm -f $PLS
+

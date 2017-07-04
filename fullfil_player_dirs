@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# fullfil_player_dirs /media/MEDIA
+
+MUSIC_DIR=/mnt/nas/music
+
+PLS=$(mktemp -p /tmp fullfil_player_dirs.XXX)
+
+pushd $MUSIC_DIR 1>/dev/null
+
+# get the directory list, remove the directories from depth=1
+find -noleaf -type d -printf '%P\n' | grep '/\w' | sort -R > $PLS
+
+while read line; do
+	if ls "$line"/*.mp3 1>/dev/null 2>/dev/null; then
+		# if at least one mp3 file exists
+		if mkdir -p "$1"/"$line"; then
+			# only copy the files if the directory could
+			# indeed by created
+			cp "$line"/*.mp3 "$1"/"$line"
+		else
+			break
+		fi
+	fi
+        if ls "$line"/*.wma 1>/dev/null 2>/dev/null; then
+		# if at least one wma file exists
+ 		if mkdir -p "$1"/"$line"; then
+			# only copy the files if the directory could
+			# indeed by created
+       		        cp "$line"/*.wma "$1"/"$line"
+		else
+			break
+		fi
+	fi
+done < $PLS
+
+rm -f $PLS
+
+popd 1>/dev/null
+

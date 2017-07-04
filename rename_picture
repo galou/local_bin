@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 RENAME_CMD='/usr/bin/jhead -nf%Y-%m-%d--%H-%M-%S'
 

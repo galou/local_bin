@@ -1,7 +1,9 @@
 #!/bin/sh
+# Remove all installed kernels expect the latest from the 4.4 series and the latest from the 3.13 series.
 
 # Source: http://chr4.org/blog/2013/08/04/apt-get-cleanup-commands/
-sudo apt-get purge $(dpkg --list | egrep 'linux-image-[0-9]' | awk '{print $3,$2}' | sort -nr | tail -n +3 | grep -v $(uname -r) | awk '{ print $2}')
+sudo apt-get purge $(dpkg --list | egrep 'linux-image-[0-9]' | awk '{print $3,$2}' | sort -nr | grep -v 4.4 | tail -n +2 | grep -v $(uname -r) | awk '{ print $2}')
+sudo apt-get purge $(dpkg --list | egrep 'linux-image-[0-9]' | awk '{print $3,$2}' | sort -nr | grep -v 3.13 | tail -n +2 | grep -v $(uname -r) | awk '{ print $2}')
 
 # A short explanation:
 # apt-get purge             # remove packages (and purge configuration) selected by the following lines

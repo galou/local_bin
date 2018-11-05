@@ -4,6 +4,7 @@
 from __future__ import print_function, division
 
 import os
+import struct
 import sys
 
 from PIL import Image
@@ -66,7 +67,7 @@ def thumbnail_file(full_src_dir, full_dest_dir, name, size):
             try:
                 exif_dict = piexif.load(im.info['exif'])
                 exif_bytes = piexif.dump(exif_dict)
-            except ValueError:
+            except (ValueError, struct.error):
                 im.save(dest_file)
             else:
                 im.save(dest_file, exif=exif_bytes)
@@ -107,11 +108,15 @@ def get_orientation(image):
     """Return the image orientation from EXIF data"""
     try:
         exif_dict = piexif.load(image.info['exif'])
-    except KeyError:
+    except (KeyError, struct.error):
+        print('Cannot get EXIF for {}'.format(image.filename),
+              file=sys.stderr)
         return 0
     try:
         orientation = exif_dict['0th'].pop(piexif.ImageIFD.Orientation)
     except KeyError:
+        print('Cannot get orientation for {}'.format(image.filename),
+              file=sys.stderr)
         return 0
 
     if orientation == 3:

@@ -1,0 +1,68 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+from __future__ import print_function, division
+from __future__ import unicode_literals
+
+import os
+import shutil
+
+import eyed3
+
+
+def filter_title(title):
+    replace_sets = [
+        ("'", '_'),
+        (' ', '_'),
+        ('_-_', '-'),
+        (',', '-'),
+        ('.', '_'),
+    ]
+    remove_chars = ['#', '/', '!', '(', ')']
+
+    for old, new in replace_sets:
+        title = title.replace(old, new)
+    for c in remove_chars:
+        title = title.replace(c, '')
+    return title
+
+
+def rename_to_mp3(filename):
+    new_filename = filename + '.mp3'
+    if os.path.exists(new_filename):
+        raise Exception('File {} already exists'.format(new_filename))
+    shutil.move(filename, new_filename)
+    return new_filename
+
+
+def rename_from_id3(filelist):
+    for f in filelist:
+        if not f.endswith('.mp3'):
+            f = rename_to_mp3(f)
+        basedir = os.path.dirname(f)
+        try:
+            id3 = eyed3.load(f)
+            if id3 is None:
+                continue
+            if basedir:
+                basedir += '/'
+            track_num, cd_num = id3.tag.track_num
+            if track_num:
+                track_str = '{:02}'.format(track_num) + '-'
+            else:
+                track_str = ''
+            title = filter_title(id3.tag.title)
+            new_f = basedir + track_str + title + '.mp3'
+            if not os.path.exists(new_f):
+                shutil.move(f, new_f)
+            else:
+                print('File {} already exists!'.format(new_f))
+        except Exception as e:
+            print('Error with {}: {}'.format(f, e.message))
+            raise
+
+if __name__ == '__main__':
+    import sys
+
+    filelist = sys.argv[1:]
+    rename_from_id3(filelist)

@@ -1,6 +1,15 @@
 #!/bin/sh
 
+# Old versions of duplicity (e.g. on Ubuntu 14.04)
 LOCKFILE=$(find /home/gael/.cache/duplicity -name lockfile.lock)
+
+if [ -n "$LOCKFILE" ]; then
+    # LOCKFILE is not empty, i.e. a lock file exists
+    zenity --error --text="Error\! duplicity lock file found: $LOCKFILE\!"
+fi
+
+# Recent versions of duplicity (e.g. on Ubuntu 18.04)
+LOCKFILE=$(find /home/gael/.cache/duplicity -name lockfile)
 
 if [ -n "$LOCKFILE" ]; then
     # LOCKFILE is not empty, i.e. a lock file exists

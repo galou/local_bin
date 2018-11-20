@@ -1,0 +1,78 @@
+#!/bin/bash
+# Two monitors, secondary on the left or on the right.
+# Usage: display-2-secondary {left|right}.
+
+# Usage: connected_display
+connected_displays()
+{
+    xrandr --listmonitors | tail -n +2 | cut -d ' ' -f 6
+}
+
+# Usage: best_connected OUT1 OUT2 ...
+# Return the first connected output from the input list
+best_connected()
+{
+    CONNECTED_OUTPUTS=$(connected_displays)
+    CANDIDATE_OUTPUTS="$@"
+    for OUTPUT in $CONNECTED_OUTPUTS; do
+        if [[ "$CANDIDATE_OUTPUTS" =~ "$OUTPUT" ]]; then
+            # If $OUTPUT in $CANDIDATE_OUTPUTS, bash regular expression
+            echo "$OUTPUT"
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Usage: all_outputs_except OUTPUT
+all_outputs_except()
+{
+    EXCLUDE="$1"
+    xrandr | grep connected | cut --delimiter=' ' --field=1 | grep -v "$EXCLUDE"
+}
+
+# Usage: display_secondary_on {--left-of|--right-of}
+display_secondary_on()
+{
+    POSITION="$1"
+    HOST=$(hostname -f)
+
+    if [[ "$HOST" = pcgael ]]; then
+        # eDP1 = laptop screen
+        PRIMARY=eDP1
+        SECONDARY=$(best_connected HDMI3 DP1 DP2 VGA1 HDMI1 HDMI2)
+    elif [[ "$HOST" = pcgael2 ]]; then
+        PRIMARY=eDP1
+        SECONDARY=$(best_connected HDMI3 DP1 DP2 VGA1 HDMI1 HDMI2)
+    elif [[ "$HOST" = pcgael3 ]]; then
+        PRIMARY=DVI-D-0
+        SECONDARY=$(best_connected DP-0 DP-1 HDMI-0)
+    else
+        exit 1
+    fi
+
+    # Turn off all outputs not being cited as primary or secondary.
+    for OUTPUT in $(all_outputs_except $PRIMARY); do
+        if [[ "$OUTPUT " != "$SECONDARY" ]]; then
+            xrandr --output "$OUTPUT" --off
+        fi
+    done
+
+    if [[ -z "$SECONDARY" ]]; then
+        xrandr \
+            --output "$PRIMARY" --auto --primary
+    else
+        xrandr \
+            --output "$PRIMARY" --auto --primary \
+            --output "$SECONDARY" --auto $POSITION "$PRIMARY"
+    fi
+}
+
+if [[ "$1" = left ]]; then
+    display_secondary_on --left-of
+elif [[ "$1" = right ]]; then
+    display_secondary_on --right-of
+else
+    echo Usage: $0 '{left|right}' 1>&2
+fi
+

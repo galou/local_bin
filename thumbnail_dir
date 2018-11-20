@@ -12,7 +12,6 @@ import piexif
 
 
 # TODO: delete thumbnails of removed source images.
-# TODO: multithreading
 # TODO: add a --include option with a list a files to include, relative to the
 #         source directory. Other files are ignored.
 # TODO: add a --exclude option with a list of files to exclude.

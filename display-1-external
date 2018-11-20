@@ -21,4 +21,4 @@ else
     exit 1
 fi
 
-display-1-single "$PRIMARY"
+display-1 "$PRIMARY"

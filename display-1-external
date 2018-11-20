@@ -1,0 +1,24 @@
+#!/bin/bash
+# Laptop monitor as single monitor
+# Usage: display-1-laptop
+
+# Directory of current script.
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null && pwd)"
+
+source "$DIR/display-utilities"
+
+HOST=$(hostname -f)
+
+if [[ "$HOST" = pcgael ]]; then
+    # eDP1 = laptop screen
+    PRIMARY=$(best_connected HDMI3 DP1 DP2 VGA1 HDMI1 HDMI2)
+elif [[ "$HOST" = pcgael2 ]]; then
+    # eDP1 = laptop screen
+    PRIMARY=$(best_connected HDMI3 DP1 DP2 VGA1 HDMI1 HDMI2)
+elif [[ "$HOST" = pcgael3 ]]; then
+    PRIMARY=$(best_connected DP-0 DVI-V-0 HDMI1 DP-1)
+else
+    exit 1
+fi
+
+display-1-single "$PRIMARY"

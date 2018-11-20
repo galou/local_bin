@@ -1,0 +1,54 @@
+#!/bin/bash
+# One monitor.
+# Usage: display-1 MONITOR
+
+# Usage: connected_display
+connected_displays()
+{
+    xrandr --listmonitors | tail -n +2 | cut -d ' ' -f 6
+}
+
+# Usage: best_connected OUT1 OUT2 ...
+# Return the first connected output from the input list
+best_connected()
+{
+    CONNECTED_OUTPUTS=$(connected_displays)
+    CANDIDATE_OUTPUTS="$@"
+    for OUTPUT in $CONNECTED_OUTPUTS; do
+        if [[ "$CANDIDATE_OUTPUTS" =~ "$OUTPUT" ]]; then
+            # If $OUTPUT in $CANDIDATE_OUTPUTS, bash regular expression
+            echo "$OUTPUT"
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Usage: all_outputs_except OUTPUT
+all_outputs_except()
+{
+    EXCLUDE="$1"
+    xrandr | grep connected | cut --delimiter=' ' --field=1 | grep -v "$EXCLUDE"
+}
+
+# Usage: display_single OUTPUT
+display_single()
+{
+    PRIMARY=$(best_connected "$1")
+
+    if ! [[ -z "$PRIMARY" ]]; then
+        # Change ouputs only if primary is connected to avoid a blackout.
+        # Turn off all outputs not being cited as primary.
+        for OUTPUT in $(all_outputs_except $PRIMARY); do
+            xrandr --output "$OUTPUT" --off
+        done
+
+        xrandr --output "$PRIMARY" --auto --primary
+    fi
+}
+
+if [[ -z "$1" ]]; then
+    echo Usage: $0 MONITOR 1>&2
+else
+    display_single "$1"
+fi

@@ -1,0 +1,18 @@
+#!/bin/bash
+# Laptop monitor as single monitor
+# Usage: display-1-laptop
+
+HOST=$(hostname -f)
+
+if [[ "$HOST" = pcgael ]]; then
+    # eDP1 = laptop screen
+    PRIMARY=eDP1
+elif [[ "$HOST" = pcgael2 ]]; then
+    PRIMARY=eDP1
+elif [[ "$HOST" = pcgael3 ]]; then
+    PRIMARY=DVI-D-0
+else
+    exit 1
+fi
+
+display-1-single "$PRIMARY"

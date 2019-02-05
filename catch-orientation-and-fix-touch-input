@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""
+Usage:
+    catch-orientation-and-fix-touch-input [options]
+
+Options:
+    -h,--help        display help message
+    --version        display version and exit
+"""
+# Inspired by https://github.com/sarmbruster/thinkpad_x1_yoga_rotation.
+import io
+import logging
+import multiprocessing
+import os
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+import dbus
+import docopt
+from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GLib
+
+g_version = '1.0'
+global g_logger
+
+
+def sensor_proxy_signal_handler(source, changedProperties, invalidatedProperties, **kwargs):
+    if source == 'net.hadess.SensorProxy':
+        if 'AccelerometerOrientation' in changedProperties:
+            orientation = changedProperties['AccelerometerOrientation']
+            g_logger.info('dbus signal indicates orientation change to {}'.format(orientation))
+            # A tool in Ubuntu change 'Coordinate Transformation Matrix' of
+            # Wacom's "Finger touch" wrongly. We need to wait for this tool to
+            # act before cancelling its action.
+            time.sleep(3)
+            subprocess.call(['fix-touch-input'])
+
+
+def main():
+    # logging
+    global g_logger
+    g_logger = logging.getLogger()
+    logHandler = logging.StreamHandler()
+    g_logger.addHandler(logHandler)
+    logHandler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    g_logger.level = logging.INFO
+
+    # init dbus stuff and subscribe to events
+    DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    proxy = bus.get_object('net.hadess.SensorProxy', '/net/hadess/SensorProxy')
+    props = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
+    props.connect_to_signal('PropertiesChanged', sensor_proxy_signal_handler, sender_keyword='sender')
+    iface = dbus.Interface(proxy, 'net.hadess.SensorProxy')
+    iface.ClaimAccelerometer()
+
+    loop = GLib.MainLoop()
+    loop.run()
+
+if __name__ == "__main__":
+    options = docopt.docopt(__doc__)
+    if options['--version']:
+        print(g_version)
+        exit()
+    main()

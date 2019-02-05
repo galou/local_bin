@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Find the line in "xrandr -q --verbose" output that contains current screen orientation and "strip" out current orientation.
+
+rotation="$(xrandr -q --verbose | grep 'connected' | egrep -o  '\) (normal|left|inverted|right) \(' | egrep -o '(normal|left|inverted|right)')"
+
+# Using current screen orientation proceed to rotate screen and input devices.
+
+touch='Wacom HID 50F0 Finger touch'
+
+case "$rotation" in
+    normal)
+    xsetwacom set "$touch" rotate none
+    # Reset Coordinate Transformation Matrix just in case.
+    xinput set-prop "$touch" "Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1
+    ;;
+    left)
+    xsetwacom set "$touch" rotate ccw
+    # Reset Coordinate Transformation Matrix because Ubuntu wrongly set it to something else.
+    xinput set-prop "$touch" "Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1
+    ;;
+    inverted)
+    # Reset Coordinate Transformation Matrix because Ubuntu wrongly set it to something else.
+    xinput set-prop "$touch" "Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1
+    ;;
+    right)
+    xsetwacom set "$touch" rotate cw
+    # Reset Coordinate Transformation Matrix because Ubuntu wrongly set it to something else.
+    xinput set-prop "$touch" "Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1
+    ;;
+esac

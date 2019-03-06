@@ -23,6 +23,9 @@ display_secondary_on()
     elif [[ "$HOST" = pcgael3 ]]; then
         PRIMARY=DVI-D-0
         SECONDARY=$(best_connected DP-0 DP-1 HDMI-0)
+    elif [[ "$HOST" = pcgael4 ]]; then
+        PRIMARY=eDP-1
+        SECONDARY=$(best_connected DP-1 HDMI-1)
     else
         exit 1
     fi

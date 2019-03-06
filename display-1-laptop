@@ -11,6 +11,8 @@ elif [[ "$HOST" = pcgael2 ]]; then
     PRIMARY=eDP1
 elif [[ "$HOST" = pcgael3 ]]; then
     PRIMARY=DVI-D-0
+elif [[ "$HOST" = pcgael4 ]]; then
+    PRIMARY=eDP-1
 else
     exit 1
 fi

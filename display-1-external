@@ -17,6 +17,8 @@ elif [[ "$HOST" = pcgael2 ]]; then
     PRIMARY=$(best_connected HDMI3 DP1 DP2 VGA1 HDMI1 HDMI2)
 elif [[ "$HOST" = pcgael3 ]]; then
     PRIMARY=$(best_connected DP-0 DVI-V-0 HDMI1 DP-1)
+elif [[ "$HOST" = pcgael4 ]]; then
+    PRIMARY=$(best_connected DP-1 HDMI-1)
 else
     exit 1
 fi

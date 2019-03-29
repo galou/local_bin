@@ -1,11 +1,18 @@
 #!/bin/sh
 
+# Do nothing if duplicity is running
+ps -x -o comm | grep -e '\<duplicity\>' >/dev/null
+if [ $? = 0 ]; then
+    exit 0
+fi
+
 # Old versions of duplicity (e.g. on Ubuntu 14.04)
 LOCKFILE=$(find /home/gael/.cache/duplicity -name lockfile.lock)
 
 if [ -n "$LOCKFILE" ]; then
     # LOCKFILE is not empty, i.e. a lock file exists
     zenity --error --text="Error\! duplicity lock file found: $LOCKFILE\!"
+    exit 1
 fi
 
 # Recent versions of duplicity (e.g. on Ubuntu 18.04)
@@ -14,4 +21,5 @@ LOCKFILE=$(find /home/gael/.cache/duplicity -name lockfile)
 if [ -n "$LOCKFILE" ]; then
     # LOCKFILE is not empty, i.e. a lock file exists
     zenity --error --text="Error\! duplicity lock file found: $LOCKFILE\!"
+    exit 1
 fi

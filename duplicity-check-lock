@@ -1,8 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 # Do nothing if duplicity is running
 ps -x -o comm | grep -e '\<duplicity\>' >/dev/null
-if [ $? = 0 ]; then
+if (( $? )); then
+    # duplicity process running
     exit 0
 fi
 

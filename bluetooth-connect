@@ -1,0 +1,8 @@
+#!/bin/sh
+
+bluetooth on
+sleep 1
+echo "agent on
+connect $1
+quit" | bluetoothctl
+

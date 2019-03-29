@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo "disconnect $1
+quit" | bluetoothctl
+

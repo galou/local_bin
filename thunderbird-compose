@@ -1,0 +1,10 @@
+#!/bin/sh
+
+COMMA=
+ATTACHMENTS=
+for arg; do
+  ATTACHMENTS=${ATTACHMENTS}${COMMA}$(realpath "$arg")
+  COMMA=,
+done
+
+thunderbird -compose "attachment='$ATTACHMENTS'"

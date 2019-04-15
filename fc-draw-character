@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# outline-char.py: POC of rendering outlined font with FT2 + PIL.
+#
+# Copyright (C) 2011 Takahiro Yoshimura <taky@cs.monolithworks.co.jp>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Based on https://gist.github.com/alterakey/1210806.
+
+import os
+import struct
+import sys
+
+import freetype
+from PIL import Image
+from PIL import ImageDraw
+
+
+class FT2Bitmap:
+    def __init__(self, bitmap):
+        self.bitmap = bitmap
+
+    def to_pil_image(self):
+        data = b''.join([struct.pack('B', c) for c in self.bitmap.buffer])
+        return Image.frombytes('L', (self.bitmap.width, self.bitmap.rows), data)
+
+
+class OutlinedGlyphWriter:
+    def __init__(self, char, face, size, outline, outline_color):
+        self.char = char
+        self.face_name = face
+        self.char_size = size
+        self.outline_width = outline
+        self.outline_color = outline_color
+
+    def write(self):
+        mask = self._write_glyph()
+        im = Image.new('RGBA', mask.size, (0,0,0,255))
+        draw = ImageDraw.Draw(im)
+        draw.bitmap((0, 0), mask, self.outline_color)
+        return im
+
+    def _load_glyph(self):
+        face = freetype.Face(self.face_name)
+        face.set_char_size(self.char_size * 64)
+        face.load_char(self.char, freetype.FT_LOAD_DEFAULT | freetype.FT_LOAD_NO_BITMAP)
+        return face.glyph.get_glyph()
+
+    def _write_base(self):
+        glyph = self._load_glyph()
+        stroker = freetype.Stroker()
+        stroker.set(self.outline_width * 64,
+                    freetype.FT_STROKER_LINECAP_ROUND,
+                    freetype.FT_STROKER_LINEJOIN_ROUND,
+                    0)
+        glyph.stroke(stroker)
+        bitmap = glyph.to_bitmap(freetype.FT_RENDER_MODE_NORMAL, freetype.Vector(0,0)).bitmap
+        return FT2Bitmap(bitmap).to_pil_image()
+
+    def _write_glyph(self):
+        base = self._write_base()
+        glyph = self._load_glyph()
+        bitmap = glyph.to_bitmap(freetype.FT_RENDER_MODE_NORMAL, freetype.Vector(0,0)).bitmap
+        mask = FT2Bitmap(bitmap).to_pil_image()
+        draw = ImageDraw.Draw(base)
+        draw.bitmap((self.outline_width, self.outline_width), mask, 0)
+        return base
+
+
+def usage():
+    print('{}: character font1 [font2] ...'.format(sys.argv[0]))
+
+
+if __name__ == '__main__':
+    try:
+        character = sys.argv[1]
+    except IndexError:
+        usage()
+        sys.exit(1)
+
+    try:
+        fonts = sys.argv[2:]
+    except IndexError:
+        usage()
+        sys.exit(1)
+
+    for font in fonts:
+        glyph_size = 1024
+        outline_width = 64
+        outline_color = (255,255,255,255)
+
+        char = character[0]
+        im = OutlinedGlyphWriter(char, font, glyph_size, outline_width, outline_color).write()
+        # im.show()
+        im.save('{}-{}.png'.format(ord(char), font.replace(os.path.sep, '_')), 'png')

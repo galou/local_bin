@@ -2,7 +2,7 @@
 #
 # fullfil_player_dirs /media/MEDIA
 
-MUSIC_DIR=/run/user/1000/gvfs/smb-share:server=cloud,share=public/music
+MUSIC_DIR=/mnt/ecorchard-nas/public/music
 
 PLS=$(mktemp -p /tmp fullfil_player_dirs.XXX)
 

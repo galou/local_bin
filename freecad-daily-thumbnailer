@@ -1,0 +1,45 @@
+#!/usr/bin/python
+# Thumbnailer for FreeCAD files, defaults to an icon available in only freecad-daily
+# package.
+# To make it available, also create the file
+# '/usr/share/thumbnailers/freecad-daily.thumbnailer' with the following
+# content:
+# """
+# [Thumbnailer Entry]
+# TryExec=freecad-daily-thumbnailer
+# Exec=freecad-daily-thumbnailer -s %s %u %o
+# MimeType=application/x-extension-fcstd
+# """
+
+
+import sys, zipfile, md5
+import getopt
+import gnomevfs
+
+opt, par = getopt.getopt(sys.argv[1:], '-s:')
+try:
+    infile = gnomevfs.get_local_path_from_uri(par[0])
+except RuntimeError:
+    # Not an URI but normal file name.
+    infile = par[0]
+outfile = par[1]
+
+try:
+    zfile = zipfile.ZipFile(infile)
+    files = zfile.namelist()
+
+    # check for meta-file if it's really a FreeCAD document
+    if 'Document.xml' not in files:
+        sys.exit(1)
+
+    image_path = 'thumbnails/Thumbnail.png'
+    if image_path in files:
+        image = zfile.read(image_path)
+    else:
+        freecad_icon_file = open('/usr/share/freecad-daily/Mod/Start/StartPage/images/freecad.png')
+        image = freecad_icon_file.read()
+
+    with open(outfile, 'wb') as thumb:
+        thumb.write(image)
+except:
+    sys.exit(1)

@@ -8,20 +8,44 @@ for arg in "$@"; do
     NEF_FILE_CAP="${NAME_BASE}.NEF"
     if [ -e "$NEF_FILE_LOW" ]; then
         NEF_FILE="$NEF_FILE_LOW"
-    fi;
+    fi
     if [ -e "$NEF_FILE_CAP" ]; then
         NEF_FILE="$NEF_FILE_CAP"
-    fi;
+    fi
     if [ -e "$NEF_FILE" ]; then
-        CMD_OUTPUT=$($RENAME_CMD "$arg")
-        NEW_JPG_FILE="${CMD_OUTPUT#* --> }"
-        NEW_NEF_FILE="${NEW_JPG_FILE%.jpg}.nef"
-        mv "$NEF_FILE" "$NEW_NEF_FILE"
-        echo "$arg" "-->" "$NEW_JPG_FILE"
-        echo "$NEF_FILE" "-->" "$NEW_NEF_FILE"
+        OLD_JPG_FILE_LOW="${NAME_BASE}.jpg"
+        OLD_JPG_FILE_CAP="${NAME_BASE}.JPG"
+        CMD_OUTPUT=$($RENAME_CMD "${OLD_JPG_FILE_LOW}" 2>&1)
+        if [ $? = 0 ]; then
+            # $RENAME_CMD succeeded, i.e. there is an equivalent jpg file, which is already renamed at this point.
+            NEW_JPG_FILE="${CMD_OUTPUT#* --> }"
+            if [ ! -z "${NEW_JPG_FILE}" ]; then
+                # $RENAME_CMD succeeds also if the name was already correct, in
+                # which case NEW_NEF_FILE is empty. We do not want to rename to
+                # ".nef".
+                NEW_NEF_FILE="${NEW_JPG_FILE%.jpg}.nef"
+                mv "$NEF_FILE" "$NEW_NEF_FILE"
+                echo "$OLD_JPG_FILE_LOW" "-->" "$NEW_JPG_FILE"
+                echo "$NEF_FILE" "-->" "$NEW_NEF_FILE"
+            fi
+        fi
+        CMD_OUTPUT=$($RENAME_CMD "${OLD_JPG_FILE_CAP}" 2>&1)
+        if [ $? = 0 ]; then
+            # $RENAME_CMD succeeded, i.e. there is an equivalent JPG file, which is already renamed at this point.
+            NEW_JPG_FILE="${CMD_OUTPUT#* --> }"
+            if [ ! -z "${NEW_JPG_FILE}" ]; then
+                # $RENAME_CMD succeeds also if the name was already correct, in
+                # which case NEW_NEF_FILE is empty. We do not want to rename to
+                # ".nef".
+                NEW_NEF_FILE="${NEW_JPG_FILE%.jpg}.nef"
+                mv "$NEF_FILE" "$NEW_NEF_FILE"
+                echo "$OLD_JPG_FILE_CAP" "-->" "$NEW_JPG_FILE"
+                echo "$NEF_FILE" "-->" "$NEW_NEF_FILE"
+            fi
+        fi
     else
         if [ -e "$arg" ]; then
             $RENAME_CMD -q "$arg"
-        fi;
-    fi;
+        fi
+    fi
 done

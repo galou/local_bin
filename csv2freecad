@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+"""Convert a list of points into a FreeCAD file.
+"""
+# Dependencies: FreeCAD, numpy, pynumparser
+
+import argparse
+import os
+import sys
+from typing import List, Optional, Tuple, Union
+
+import FreeCAD as fc
+
+import numpy as np
+
+from pynumparser import NumberSequence
+
+
+def parse_args() -> argparse.Namespace:
+    """Define and parse arguments."""
+    parser = argparse.ArgumentParser(
+        description='Convert a list of points into a FreeCAD file')
+    parser.add_argument('input_file', type=str,
+                        action='store',
+                        help='the file to convert')
+    parser.add_argument('output_file', type=str,
+                        action='store',
+                        help='the generated FreeCAD file')
+    parser.add_argument('--unit', dest='unit',
+                        default='m',
+                        action='store',
+                        help='Unit of the values, either as text or ratio to '
+                        'meter')
+    parser.add_argument('--skip-rows', dest='skip_rows', type=int,
+                        default=0,
+                        action='store',
+                        help='Number of rows to skip at the beginning')
+    parser.add_argument('--delimiter', dest='delimiter', type=str,
+                        default=',',
+                        action='store',
+                        help='Number of rows to skip at the beginning')
+    parser.add_argument('--columns', dest='columns', type=str,
+                        action='store',
+                        help='Columns of the point coordinates, '
+                        'e.g. "0-2", "0,2", "1,3-4", '
+                        'cf. --index-base for 1-based indexes')
+    parser.add_argument('--index-base', dest='index_base', type=int,
+                        default=0,
+                        action='store',
+                        help='Whether 0-based or 1-based (or n-based) index '
+                        'for columns')
+    parser.add_argument('--name-column', dest='name_column', type=int,
+                        action='store',
+                        help='Column for the point name, cf. --index-base for '
+                        '1-based index')
+    parser.add_argument('--add-index', dest='add_index_to_name',
+                        action='store_true',
+                        help='Add "vertex{index}-" as prefix to the point '
+                        'label when using --name-column')
+    parser.add_argument('--force', dest='force', action='store_true',
+                        help='Force overwriting an existing output file')
+    parser.add_argument('--group', dest='group', type=str,
+                        action='store', default='',
+                        help='Group to add the vertices to')
+
+    return parser.parse_args()
+
+
+def get_unit(unit: Union[str, float]) -> float:
+    """Return the unit as ratio as millimeter."""
+    if unit == 'm':
+        return 1000.0
+    if unit == 'mm':
+        return 1.0
+    try:
+        return float(unit) * 1000.0
+    except ValueError:
+        print(f'Unknown unit "{unit}", supported are m and mm',
+              file=sys.stderr)
+
+
+def get_column_indexes(column_desc: Optional[str], base: int = 0) -> Optional[
+        Union[
+            Tuple[int, int],
+            Tuple[int, int, int]]]:
+    """Return the list of columns.
+
+    Return a list of 0-based indexes. Return None if column_desc is None
+    because we cannot guess whether the returned list should be [0, 1] or
+    [0, 1, 2].
+
+    """
+    if not column_desc:
+        return None
+    ns = NumberSequence()
+    try:
+        user_indexes = ns.parse(column_desc)
+    except ValueError:
+        print('Cannot parse --columns argument', file=sys.stderr)
+    return [n - base for n in user_indexes]
+
+
+def get_points(filename: str,
+               skip_rows: int = 0,
+               delimiter: str = ',',
+               column_indexes: Optional[Union[
+                   Tuple[int, int],
+                   Tuple[int, int, int]]] = None,
+               unit: float = 1.0) -> np.array:
+    """Return the list of points from an input file.
+
+    The unit of the points coordinates is millimeter.
+
+    Parameters
+    ----------
+    - filename: input file with the point list
+    - skip_rows: number of rows to skip at the beginning of the input file
+    - delimiter: data delimiter in the input file
+    - column_indexes: list of column indexes, 0-based, size 2 or 3.
+    - unit: number of millimeters for a coordinate of 1.0 in the input file.
+
+    """
+    try:
+        data = np.loadtxt(filename, skiprows=skip_rows, delimiter=delimiter)
+    except Exception:
+        print('Error in input data')
+        exit(1)
+
+    if column_indexes and len(column_indexes) < 2:
+        print('Error in parameter --column-indexes, '
+              'should have 2 or 3 values',
+              file=sys.stderr)
+        exit(1)
+
+    n, m = data.shape
+
+    if m < 2:
+        print('Error in input data, has '
+              f'{m} columns, should have at least 2',
+              file=sys.stderr)
+        exit(1)
+
+    if not column_indexes:
+        column_indexes = range(min(3, m))
+
+    if max(column_indexes) >= m:
+        print('Error in --columns parameter, requires '
+              f'{max(column_indexes) + 1} columns whereas input data has only '
+              f'{m} columns',
+              file=sys.stderr)
+
+    data = data[:, column_indexes]
+
+    if data.shape[1] == 2:
+        data3d = np.zeros((n, 3))
+        data3d[:, :2] = data
+        data = data3d
+    data *= unit
+    return data
+
+
+def get_names(filename: str,
+              column_index: int = None,
+              add_index_to_name: bool = False,
+              skip_rows: int = 0,
+              delimiter: str = ',') -> List[str]:
+    """Return the list of point names from an input file.
+
+    Parameters
+    ----------
+    - filename: input file with the point list
+    - column_index: 0-based index of the column with the point names
+    - skip_rows: number of rows to skip at the beginning of the input file
+    - delimiter: data delimiter in the input file
+
+    """
+    if column_index is None:
+        return
+
+    try:
+        data = np.loadtxt(filename,
+                          skiprows=skip_rows, delimiter=delimiter, dtype=str)
+    except Exception:
+        print('Error in input data')
+        exit(1)
+
+    if column_index >= data.shape[1]:
+        print('Error in --name-column parameter, requires '
+              f'{column_index + 1} columns whereas input data has only '
+              f'{data.shape[1]} columns',
+              file=sys.stderr)
+
+    number_format = int(np.ceil(np.log10(len(data))))
+    try:
+        return [f'vertex{i:0{number_format}d}-{data[i, column_index]}'
+                for i in range(len(data))]
+    except IndexError:
+        return
+
+
+def create_fc_doc(points: np.ndarray,
+                  filename: str,
+                  group: str = '',
+                  names: Optional[List[str]] = None):
+    """Create the FreeCAD document, add points, and save."""
+    doc = fc.newDocument()
+    doc.FileName = filename
+    if group:
+        g = doc.addObject('App::DocumentObjectGroup', group)
+        doc.recompute()
+
+        def add_fun(name):
+            return g.newObject('Part::Vertex', name)
+    else:
+
+        def add_fun(name):
+            return doc.addObject('Part::Vertex', name)
+
+    if names is not None and (len(points) != len(names)):
+        print('Number of points and number of names differ '
+              f'({len(points)} != {len(names)})'
+              ', ignoring names',
+              file=sys.stderr)
+        names = None
+
+    for i, (x, y, z) in enumerate(points):
+        vertex_name = f'vertex_{i:04d}' if names is None else names[i]
+        vertex = add_fun(vertex_name)
+        vertex.X = x
+        vertex.Y = y
+        vertex.Z = z
+        vertex.Label = vertex_name
+    doc.recompute()
+    doc.save()
+
+
+def main():
+    """Parse argument and process."""
+    args = parse_args()
+
+    if (not args.force) and os.path.exists(args.output_file):
+        print('File {} already exists, use --force to overwrite'.format(
+            args.output_file),
+            file=sys.stderr)
+        exit(1)
+
+    unit = get_unit(args.unit)
+    if unit is None:
+        exit(1)
+    columns_indexes = get_column_indexes(args.columns, args.index_base)
+    points = get_points(args.input_file, args.skip_rows, args.delimiter,
+                        columns_indexes, unit)
+    names = get_names(filename=args.input_file,
+                      column_index=args.name_column,
+                      add_index_to_name=args.add_index_to_name,
+                      skip_rows=args.skip_rows,
+                      delimiter=args.delimiter)
+    create_fc_doc(points, args.output_file, args.group, names)
+
+
+if __name__ == '__main__':
+    main()

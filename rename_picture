@@ -1,9 +1,27 @@
 #!/bin/sh
 
-RENAME_CMD='/usr/bin/jhead -nf%Y-%m-%d--%H-%M-%S'
+lower ()
+{
+    echo ${1} | tr '[:upper:]' '[:lower:]'
+}
+
+extension ()
+{
+    # ${1##*.}: delete the longest match of string in $1 from the beginning.
+    echo $(lower ${1##*.})
+}
+
+# Get the Encoded_date information from mediainfo.
+basename_from_encoded_date ()
+{
+    DATE=$(mediainfo --Inform='General;%Encoded_Date%' "$1")
+    date --date="$DATE" '+%Y-%m-%d--%H-%M-%S'
+}
+
+RENAME_JPG_CMD='/usr/bin/jhead -nf%Y-%m-%d--%H-%M-%S'
 
 for arg in "$@"; do
-    NAME_BASE="${arg%.*}"
+    NAME_BASE="${arg%.*}" # Delete the shortest match of string in $var from the end.
     NEF_FILE_LOW="${NAME_BASE}.nef"
     NEF_FILE_CAP="${NAME_BASE}.NEF"
     if [ -e "$NEF_FILE_LOW" ]; then
@@ -15,12 +33,12 @@ for arg in "$@"; do
     if [ -e "$NEF_FILE" ]; then
         OLD_JPG_FILE_LOW="${NAME_BASE}.jpg"
         OLD_JPG_FILE_CAP="${NAME_BASE}.JPG"
-        CMD_OUTPUT=$($RENAME_CMD "${OLD_JPG_FILE_LOW}" 2>&1)
+        CMD_OUTPUT=$($RENAME_JPG_CMD "${OLD_JPG_FILE_LOW}" 2>&1)
         if [ $? = 0 ]; then
-            # $RENAME_CMD succeeded, i.e. there is an equivalent jpg file, which is already renamed at this point.
+            # $RENAME_JPG_CMD succeeded, i.e. there is an equivalent jpg file, which is already renamed at this point.
             NEW_JPG_FILE="${CMD_OUTPUT#* --> }"
             if [ ! -z "${NEW_JPG_FILE}" ]; then
-                # $RENAME_CMD succeeds also if the name was already correct, in
+                # $RENAME_JPG_CMD succeeds also if the name was already correct, in
                 # which case NEW_NEF_FILE is empty. We do not want to rename to
                 # ".nef".
                 NEW_NEF_FILE="${NEW_JPG_FILE%.jpg}.nef"
@@ -29,12 +47,12 @@ for arg in "$@"; do
                 echo "$NEF_FILE" "-->" "$NEW_NEF_FILE"
             fi
         fi
-        CMD_OUTPUT=$($RENAME_CMD "${OLD_JPG_FILE_CAP}" 2>&1)
+        CMD_OUTPUT=$($RENAME_JPG_CMD "${OLD_JPG_FILE_CAP}" 2>&1)
         if [ $? = 0 ]; then
-            # $RENAME_CMD succeeded, i.e. there is an equivalent JPG file, which is already renamed at this point.
+            # $RENAME_JPG_CMD succeeded, i.e. there is an equivalent JPG file, which is already renamed at this point.
             NEW_JPG_FILE="${CMD_OUTPUT#* --> }"
             if [ ! -z "${NEW_JPG_FILE}" ]; then
-                # $RENAME_CMD succeeds also if the name was already correct, in
+                # $RENAME_JPG_CMD succeeds also if the name was already correct, in
                 # which case NEW_NEF_FILE is empty. We do not want to rename to
                 # ".nef".
                 NEW_NEF_FILE="${NEW_JPG_FILE%.jpg}.nef"
@@ -43,9 +61,15 @@ for arg in "$@"; do
                 echo "$NEF_FILE" "-->" "$NEW_NEF_FILE"
             fi
         fi
-    else
-        if [ -e "$arg" ]; then
-            $RENAME_CMD -q "$arg"
-        fi
+    elif [ $(extension "$arg") = mov ]; then
+        NEW_NAME=$(basename_from_encoded_date "$arg").$(extension "$arg")
+        echo "$arg --> $NEW_NAME"
+        /bin/mv -i "$arg" "$NEW_NAME"
+    elif [ $(extension "$arg") = mp4 ]; then
+        NEW_NAME=$(basename_from_encoded_date "$arg").$(extension "$arg")
+        echo "$arg --> $NEW_NAME"
+        /bin/mv -i "$arg" "$NEW_NAME"
+    elif [ -e "$arg" ]; then
+            $RENAME_JPG_CMD -q "$arg"
     fi
 done

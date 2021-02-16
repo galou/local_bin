@@ -2,8 +2,8 @@
 #
 # fullfil_player_dirs /media/MEDIA
 
-if [ -z $1 ]; then
-	echo Usage: $0 dest_dir
+if [ -z "${1}" ]; then
+	echo Usage: "$0" dest_dir
 	exit
 fi
 
@@ -11,54 +11,54 @@ MUSIC_DIR=/mnt/ecorchard-nas/public/music
 
 PLS=$(mktemp -p /tmp fullfil_player_dirs.XXX)
 
-pushd $MUSIC_DIR 1>/dev/null
+pushd "${MUSIC_DIR}" 1>/dev/null
 
 # get the directory list, remove the directories from depth=1
-find -noleaf -type d -printf '%P\n' | grep '/\w' | sort -R > $PLS
+find -noleaf -type d -printf '%P\n' | grep '/\w' | sort -R > ${PLS}
 
 popd 1>/dev/null
 
-while read line; do
-	if ls "$MUSIC_DIR/$line/"*.mp3 1>/dev/null 2>/dev/null; then
+while read -r line; do
+	if ls "${MUSIC_DIR}/${line}/"*.mp3 1>/dev/null 2>/dev/null; then
 		# if at least one mp3 file exists
 		if mkdir -p "$1/$line"; then
-			echo "Copying $line"
+			echo "Copying ${line}"
 			# only copy the files if the directory could
 			# indeed by created
-			cp "$MUSIC_DIR/$line/"*.mp3 "$1/$line"
+			cp "${MUSIC_DIR}/${line}/"*.mp3 "${1}/${line}"
 			continue
 		else
-			echo "Could not create directory $line"
+			echo "Could not create directory ${line}"
 			break
 		fi
 	fi
-	if ls "$MUSIC_DIR/$line/"*.wma 1>/dev/null 2>/dev/null; then
+	if ls "${MUSIC_DIR}/${line}/"*.wma 1>/dev/null 2>/dev/null; then
 		# if at least one wma file exists
-		if mkdir -p "$1/$line"; then
-			echo "Copying $line"
+		if mkdir -p "${1}/${line}"; then
+			echo "Copying ${line}"
 			# only copy the files if the directory could
 			# indeed by created
-			cp "$MUSIC_DIR/$line/"*.wma "$1/$line"
+			cp "${MUSIC_DIR}/${line}/"*.wma "${1}/${line}"
 			continue
 		else
-			echo "Could not create directory $line"
+			echo "Could not create directory ${line}"
 			break
 		fi
 	fi
-	if ls "$MUSIC_DIR/$line/"*.ogg 1>/dev/null 2>/dev/null; then
+	if ls "${MUSIC_DIR}/${line}/*.ogg" 1>/dev/null 2>/dev/null; then
 		# if at least one ogg file exists
-		if mkdir -p "$1/$line"; then
+		if mkdir -p "${1}/${line}"; then
 			echo "Copying $line"
 			# only copy the files if the directory could
 			# indeed by created
-			cp "$MUSIC_DIR/$line/"*.ogg "$1/$line"
+			cp "${MUSIC_DIR}/${line}/"*.ogg "${1}/${line}"
 			continue
 		else
-			echo "Could not create directory $line"
+			echo "Could not create directory ${line}"
 			break
 		fi
 	fi
-done < $PLS
+done < ${PLS}
 
-rm -f $PLS
+rm -f ${PLS}
 

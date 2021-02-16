@@ -10,22 +10,22 @@ Options:
 # Inspired by https://github.com/sarmbruster/thinkpad_x1_yoga_rotation
 
 import atexit
-import io
 import logging
 import multiprocessing
 import os
 import signal
 import socket
 import subprocess
-import sys
 import time
 
 import dbus
-import docopt
 from dbus.mainloop.glib import DBusGMainLoop
+
+import docopt
+
 from gi.repository import GLib
 
-version = "1.0"
+version = "1.0.1"
 
 # map sensor-proxy orientation to xrandr and wacom
 xrandr_orientation_map = {

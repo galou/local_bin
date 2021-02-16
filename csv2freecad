@@ -7,12 +7,16 @@ import argparse
 import os
 import sys
 from typing import List, Optional, Tuple, Union
+import warnings
 
 import FreeCAD as fc
 
 import numpy as np
 
 from pynumparser import NumberSequence
+
+# numpy is throwing a warning on empty file in loadtxt, we don't want this.
+warnings.filterwarnings('error')
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--delimiter', dest='delimiter', type=str,
                         default=',',
                         action='store',
-                        help='Number of rows to skip at the beginning')
+                        help='Data delimiter, default to ","')
     parser.add_argument('--columns', dest='columns', type=str,
                         action='store',
                         help='Columns of the point coordinates, '
@@ -46,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--index-base', dest='index_base', type=int,
                         default=0,
                         action='store',
-                        help='Whether 0-based or 1-based (or n-based) index '
+                        help='Whether 0-based (default) or 1-based (or n-based) index '
                         'for columns')
     parser.add_argument('--name-column', dest='name_column', type=int,
                         action='store',
@@ -121,8 +125,11 @@ def get_points(filename: str,
     """
     try:
         data = np.loadtxt(filename, skiprows=skip_rows, delimiter=delimiter)
+    except UserWarning:
+        print('Input data file is empty', file=sys.stderr)
+        exit(1)
     except Exception:
-        print('Error in input data')
+        print('Error in input data', file=sys.stderr)
         exit(1)
 
     if column_indexes and len(column_indexes) < 2:
@@ -206,6 +213,7 @@ def create_fc_doc(points: np.ndarray,
     doc.FileName = filename
     if group:
         g = doc.addObject('App::DocumentObjectGroup', group)
+        g.Visibility = True  # Has no effect.
         doc.recompute()
 
         def add_fun(name):
@@ -225,6 +233,7 @@ def create_fc_doc(points: np.ndarray,
     for i, (x, y, z) in enumerate(points):
         vertex_name = f'vertex_{i:04d}' if names is None else names[i]
         vertex = add_fun(vertex_name)
+        vertex.Visibility = True  # Has no effect.
         vertex.X = x
         vertex.Y = y
         vertex.Z = z

@@ -1,0 +1,13 @@
+#!/bin/bash
+# Runs an equalizer for PulseAudio.
+#
+# Cf. also https://gist.github.com/leogama/35961ec0d279e6cf409f783c3851569e.
+
+pactl load-module module-equalizer-sink
+pactl load-module module-dbus-protocol
+
+pactl set-default-sink "$(pactl list sinks short | awk '/equalizer/ { print $2 }')"
+
+# The equalizer with graphical interface (Qt PulseAutio Equalizer, I guess).
+qpaeq
+

@@ -17,7 +17,7 @@ If REGEX is specified, the font name must match this regular expression.''')
 
 characters = sys.argv[1]
 if characters.startswith('U+'):
-    characters = unichr(int(characters[2:], 16))
+    characters = chr(int(characters[2:], 16))
 regexp = re.compile(sys.argv[2] if len(sys.argv) > 2 else '')
 
 font_names = fontconfig.query()
